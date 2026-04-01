@@ -635,30 +635,6 @@
         </div>
         <div class="field-hint" style="margin-top:8px">Summe muss 100 % ergeben. Bei Einzeleinreichung freilassen.</div>
 
-        <div class="section-divider">Datenschutz</div>
-
-        <div class="form-group">
-          <label>Anonymisierung gewünscht? <span class="required">*</span></label>
-          <div class="checkbox-group">
-            <label class="checkbox-item checked" id="anon-nein">
-              <input type="radio" name="anonym" value="nein" checked onchange="toggleAnonym(this)">
-              <div class="checkbox-label">
-                <strong>🔓 Nein – mein Name darf im Rahmen des Verfahrens genannt werden</strong>
-                <span>Ihr Name wird im Prüfverfahren bekannt sein.</span>
-              </div>
-            </label>
-            <label class="checkbox-item" id="anon-ja">
-              <input type="radio" name="anonym" value="ja" onchange="toggleAnonym(this)">
-              <div class="checkbox-label">
-                <strong>🔒 Ja – ich möchte anonym bleiben</strong>
-                <span>Ihr Name wird nicht an Dritte weitergegeben.</span>
-              </div>
-            </label>
-          </div>
-          <div class="anonym-warning" id="anonymWarning">
-            ⚠️ <strong>Anonyme Einreichung:</strong> Keine Rückfragen möglich. Prämierung nur bei Offenlegung der Identität möglich.
-          </div>
-        </div>
       </div>
       <div class="card-footer">
         <button class="btn btn-secondary" onclick="prevStep()">← Zurück</button>
@@ -755,13 +731,6 @@
                 <span>Es liegt kein Patent oder Schutzrecht Dritter vor, soweit bekannt.</span>
               </div>
             </label>
-            <label class="checkbox-item" id="erkl-3">
-              <input type="checkbox" id="erklaerung3" onchange="toggleCheck(this,'erkl-3','checked-green')">
-              <div class="checkbox-label">
-                <strong>🛡 Datenschutz-Einwilligung (DSGVO)</strong>
-                <span>Ich habe die Datenschutzhinweise zur Kenntnis genommen und willige ein.</span>
-              </div>
-            </label>
             <label class="checkbox-item" id="erkl-4">
               <input type="checkbox" id="erklaerung4" onchange="toggleCheck(this,'erkl-4','checked-green')">
               <div class="checkbox-label">
@@ -770,7 +739,7 @@
               </div>
             </label>
           </div>
-          <div class="error-msg" id="err-erklaerung">Bitte bestätigen Sie alle vier Punkte.</div>
+          <div class="error-msg" id="err-erklaerung">Bitte bestätigen Sie alle Punkte.</div>
         </div>
         <div class="info-box" style="margin-top:22px;margin-bottom:0">
           <strong>Hinweis zur Bearbeitungszeit</strong>
@@ -830,7 +799,7 @@
   </div><!-- /.card -->
 </div><!-- /.page-wrap -->
 
-<div class="float-info">Desitin Arzneimittel GmbH · Betriebliches Vorschlagswesen · Build 2026-04-01c</div>
+<div class="float-info">Desitin Arzneimittel GmbH · Betriebliches Vorschlagswesen · Build 2026-04-01d</div>
 
 <script>
 // ════════════════════════════════════════════════════════════════
@@ -1050,7 +1019,7 @@ function validateStep(step) {
   if (step === 2) { const v = document.getElementById('ist').value.trim(); const e = v.length < 50; document.getElementById('ist').classList.toggle('error', e); showErr('err-ist', e); if (e) ok = false; }
   if (step === 3) { const v = document.getElementById('soll').value.trim(); const e = v.length < 50; document.getElementById('soll').classList.toggle('error', e); showErr('err-soll', e); if (e) ok = false; }
   if (step === 4) {
-    const all4 = ['erklaerung1','erklaerung2','erklaerung3','erklaerung4'].every(id => document.getElementById(id).checked);
+    const all4 = ['erklaerung1','erklaerung2','erklaerung4'].every(id => document.getElementById(id).checked);
     showErr('err-erklaerung', !all4); if (!all4) ok = false;
   }
   return ok;
@@ -1142,7 +1111,6 @@ function buildSummary() {
       <div class="summary-section-header">✅ Erklärungen</div>
       ${sf('Eigenherkunft', document.getElementById('erklaerung1').checked ? '✓ Bestätigt' : '')}
       ${sf('Keine Schutzrechte', document.getElementById('erklaerung2').checked ? '✓ Bestätigt' : '')}
-      ${sf('Datenschutz', document.getElementById('erklaerung3').checked ? '✓ Bestätigt' : '')}
       ${sf('Vollständigkeit', document.getElementById('erklaerung4').checked ? '✓ Bestätigt' : '')}
     </div>`;
 }
