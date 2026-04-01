@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Betriebliches Vorschlagswesen – Desitin Arzneimittel GmbH</title>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.0/lib/msal-browser.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-darkest: #0D1F3C;
+    --blue-dark:    #1F3864;
+    --blue-mid:     #2E75B6;
+    --blue-light:   #5BA3D9;
+    --blue-pale:    #D6E8F5;
+    --blue-xpale:   #EBF4FC;
+    --orange:       #C55A11;
+    --green:        #2D7D46;
+    --green-light:  #E8F5EC;
+    --red:          #C0392B;
+    --red-light:    #FDEDEB;
+    --gray-100:     #F8F9FA;
+    --gray-200:     #E9ECEF;
+    --gray-400:     #ADB5BD;
+    --gray-600:     #6C757D;
+    --gray-800:     #343A40;
+    --white:        #FFFFFF;
+    --shadow-lg:    0 8px 32px rgba(0,0,0,0.12);
+    --radius:       10px;
+    --radius-sm:    6px;
+    --transition:   0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, var(--blue-darkest) 0%, var(--blue-dark) 40%, #1a3a6e 100%);
+    min-height: 100vh;
+    color: var(--gray-800);
+    padding: 20px 16px 60px;
+  }
+
+  .page-wrap { max-width: 820px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { text-align: center; padding: 36px 0 28px; color: var(--white); }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50px; padding: 6px 18px; font-size: 12px;
+    letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600;
+    margin-bottom: 18px; backdrop-filter: blur(8px);
+  }
+  .header h1 { font-size: clamp(20px, 4vw, 30px); font-weight: 700; margin-bottom: 8px; }
+  .header p  { font-size: 14px; color: rgba(255,255,255,0.72); max-width: 500px; margin: 0 auto; line-height: 1.6; }
+
+  /* ── Setup Guide ── */
+  .setup-guide {
+    background: #FFF8E1; border: 1.5px solid #FFD54F;
+    border-left: 5px solid #FFC107; border-radius: var(--radius);
+    margin-bottom: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .setup-guide-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; cursor: pointer; user-select: none;
+  }
+  .setup-guide-header-left { display: flex; align-items: center; gap: 10px; }
+  .setup-guide-title { font-size: 14px; font-weight: 700; color: #6D4C00; }
+  .setup-guide-sub   { font-size: 12px; color: #8D6E00; margin-top: 2px; }
+  .setup-guide-toggle { font-size: 18px; color: #8D6E00; transition: transform 0.2s; }
+  .setup-guide.open .setup-guide-toggle { transform: rotate(180deg); }
+  .setup-guide-body { display: none; padding: 0 18px 18px; border-top: 1px solid #FFD54F; }
+  .setup-guide.open .setup-guide-body { display: block; }
+  .setup-step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px dashed #FFD54F; }
+  .setup-step:last-child { border-bottom: none; }
+  .setup-step-num {
+    width: 26px; height: 26px; border-radius: 50%; background: #FFC107;
+    color: #5D4000; font-size: 12px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .setup-step-text { font-size: 13px; color: #5D4000; line-height: 1.6; }
+  .setup-step-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .setup-step-text code {
+    background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px;
+    font-family: 'Consolas', monospace; font-size: 12px; word-break: break-all;
+  }
+  .permission-tag {
+    display: inline-block; background: #E3F2FD; color: #0D47A1;
+    border-radius: 4px; padding: 2px 8px; font-size: 11px;
+    font-family: monospace; margin: 2px 2px 0 0; border: 1px solid #BBDEFB;
+  }
+
+  /* ── Login Banner ── */
+  .login-banner {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    backdrop-filter: blur(8px); gap: 16px; flex-wrap: wrap;
+  }
+  .login-banner-left { display: flex; align-items: center; gap: 12px; }
+  .login-banner-icon {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: rgba(255,255,255,0.15); display: flex; align-items: center;
+    justify-content: center; font-size: 20px; flex-shrink: 0;
+  }
+  .login-banner-text h3 { font-size: 14px; font-weight: 700; color: var(--white); }
+  .login-banner-text p  { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .btn-ms-login {
+    display: flex; align-items: center; gap: 8px; padding: 10px 20px;
+    background: var(--white); color: var(--blue-dark); border: none;
+    border-radius: var(--radius-sm); font-size: 13px; font-weight: 700;
+    font-family: inherit; cursor: pointer; transition: var(--transition);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-ms-login:hover { background: var(--blue-pale); transform: translateY(-1px); }
+  .btn-ms-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-ms-login svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ── User Badge (post-login) ── */
+  .user-badge {
+    display: none; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50px; padding: 6px 16px 6px 8px;
+    color: var(--white); font-size: 13px;
+  }
+  .user-badge.visible { display: flex; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .user-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--blue-light); display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 700;
+    color: var(--white); flex-shrink: 0;
+  }
+  .user-badge-name { font-weight: 600; }
+  .user-badge-dept { font-size: 11px; color: rgba(255,255,255,0.65); }
+  .user-signout {
+    margin-left: 8px; font-size: 11px; color: rgba(255,255,255,0.5);
+    cursor: pointer; text-decoration: underline; background: none; border: none;
+    font-family: inherit; padding: 0;
+  }
+  .user-signout:hover { color: rgba(255,255,255,0.9); }
+
+  /* ── Autofill Indicator ── */
+  .autofill-bar {
+    display: none; align-items: center; gap: 8px;
+    background: var(--green-light); border: 1px solid var(--green);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    font-size: 12px; color: var(--green); font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .autofill-bar.visible { display: flex; animation: fadeIn 0.3s ease; }
+
+  /* ── Autofilled input ── */
+  input.autofilled { border-color: var(--green) !important; background: var(--green-light) !important; }
+
+  /* ── Spinner ── */
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: var(--white); border-radius: 50%;
+    animation: spin 0.6s linear infinite; display: none;
+  }
+  .spinner.visible { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Progress Bar ── */
+  .progress-wrap {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+    border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px;
+    backdrop-filter: blur(8px);
+  }
+  .progress-steps {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    position: relative; gap: 4px;
+  }
+  .progress-steps::before {
+    content: ''; position: absolute; top: 16px; left: 16px; right: 16px;
+    height: 2px; background: rgba(255,255,255,0.2); z-index: 0;
+  }
+  .progress-line {
+    position: absolute; top: 16px; left: 16px; height: 2px;
+    background: linear-gradient(90deg, var(--blue-light), var(--blue-mid));
+    z-index: 1; transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+  .step-item {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    z-index: 2; flex: 1; cursor: pointer;
+  }
+  .step-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.6);
+    transition: var(--transition); position: relative;
+  }
+  .step-item.active .step-circle {
+    background: var(--blue-light); border-color: var(--blue-light);
+    color: var(--white); box-shadow: 0 0 0 4px rgba(91,163,217,0.3); transform: scale(1.1);
+  }
+  .step-item.done .step-circle { background: var(--green); border-color: var(--green); color: var(--white); }
+  .step-item.done .step-circle::after { content: '✓'; font-size: 14px; }
+  .step-item.done .step-num { display: none; }
+  .step-label {
+    font-size: 10px; color: rgba(255,255,255,0.5); text-align: center;
+    font-weight: 500; line-height: 1.3; max-width: 70px;
+  }
+  .step-item.active .step-label, .step-item.done .step-label { color: rgba(255,255,255,0.9); }
+
+  /* ── Card ── */
+  .card {
+    background: var(--white); border-radius: 16px;
+    box-shadow: var(--shadow-lg); overflow: hidden;
+    animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-header {
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 100%);
+    padding: 22px 28px; display: flex; align-items: center; gap: 14px;
+  }
+  .card-header-icon {
+    width: 42px; height: 42px; background: rgba(255,255,255,0.15);
+    border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; font-size: 20px; flex-shrink: 0;
+  }
+  .card-header-text h2 { font-size: 17px; font-weight: 700; color: var(--white); margin-bottom: 2px; }
+  .card-header-text p  { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .card-body { padding: 28px 32px; }
+
+  /* ── Form ── */
+  .form-group { margin-bottom: 22px; }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .card-body { padding: 18px; } }
+
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 7px; letter-spacing: 0.2px; }
+  label .required { color: var(--orange); margin-left: 3px; }
+  label .optional { font-weight: 400; color: var(--gray-600); font-size: 11px; margin-left: 4px; }
+  .field-hint { font-size: 11px; color: var(--gray-600); margin-top: 5px; line-height: 1.4; }
+
+  input[type="text"], textarea, select {
+    width: 100%; padding: 10px 13px; border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+    color: var(--gray-800); background: var(--gray-100);
+    transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    outline: none; -webkit-appearance: none;
+  }
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--blue-mid); background: var(--white);
+    box-shadow: 0 0 0 3px rgba(46,117,182,0.12);
+  }
+  input.error, textarea.error { border-color: var(--red); background: var(--red-light); }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+  textarea.large { min-height: 155px; }
+
+  .checkbox-group { display: flex; flex-direction: column; gap: 9px; }
+  .checkbox-item {
+    display: flex; align-items: flex-start; gap: 11px; padding: 11px 14px;
+    border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    cursor: pointer; transition: border-color var(--transition), background var(--transition);
+    background: var(--gray-100);
+  }
+  .checkbox-item:hover { border-color: var(--blue-mid); background: var(--blue-xpale); }
+  .checkbox-item input[type="checkbox"], .checkbox-item input[type="radio"] {
+    width: 17px; height: 17px; flex-shrink: 0; margin-top: 2px; accent-color: var(--blue-mid); cursor: pointer;
+  }
+  .checkbox-item.checked     { border-color: var(--blue-mid); background: var(--blue-xpale); }
+  .checkbox-item.checked-green { border-color: var(--green);   background: var(--green-light); }
+  .checkbox-label { font-size: 13px; color: var(--gray-800); line-height: 1.5; }
+  .checkbox-label strong { display: block; font-size: 13px; margin-bottom: 1px; }
+  .checkbox-label span   { font-size: 12px; color: var(--gray-600); }
+
+  .anonym-warning {
+    display: none; background: #FFF3CD; border: 1px solid #FFD700;
+    border-left: 4px solid #FFC107; border-radius: var(--radius-sm);
+    padding: 11px 14px; font-size: 13px; color: #856404; margin-top: 10px;
+  }
+  .anonym-warning.visible { display: block; }
+
+  .info-box {
+    background: var(--blue-xpale); border: 1px solid var(--blue-pale);
+    border-left: 4px solid var(--blue-mid); border-radius: var(--radius-sm);
+    padding: 13px 15px; font-size: 13px; color: var(--blue-dark);
+    line-height: 1.6; margin-bottom: 22px;
+  }
+  .info-box strong { display: block; margin-bottom: 3px; }
+
+  .section-divider {
+    display: flex; align-items: center; gap: 10px; margin: 22px 0 18px;
+    color: var(--blue-mid); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  .percent-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; align-items: end; margin-bottom: 9px; }
+  .percent-total {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 13px; background: var(--gray-100); border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; margin-top: 9px; border: 1.5px solid var(--gray-200);
+    transition: border-color var(--transition);
+  }
+  .percent-total.valid   { border-color: var(--green); color: var(--green); background: var(--green-light); }
+  .percent-total.invalid { border-color: var(--red);   color: var(--red);   background: var(--red-light); }
+
+  .card-footer {
+    padding: 18px 28px; border-top: 1px solid var(--gray-200);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--gray-100); gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    padding: 10px 26px; border-radius: var(--radius-sm); font-size: 14px;
+    font-weight: 600; font-family: inherit; cursor: pointer; transition: var(--transition);
+    border: none; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary  { background: linear-gradient(135deg, var(--blue-mid), var(--blue-dark)); color: var(--white); box-shadow: 0 2px 8px rgba(46,117,182,0.3); }
+  .btn-primary:hover  { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(46,117,182,0.4); }
+  .btn-secondary { background: var(--white); color: var(--blue-mid); border: 1.5px solid var(--blue-pale); }
+  .btn-secondary:hover { background: var(--blue-xpale); border-color: var(--blue-mid); }
+  .btn-success  { background: linear-gradient(135deg, var(--green), #1e5c35); color: var(--white); box-shadow: 0 2px 8px rgba(45,125,70,0.35); }
+  .btn-success:hover  { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(45,125,70,0.45); }
+  .btn-print    { background: var(--white); color: var(--gray-600); border: 1.5px solid var(--gray-200); font-size: 13px; padding: 8px 16px; }
+  .btn-print:hover    { background: var(--gray-100); color: var(--gray-800); }
+  .step-counter { font-size: 12px; color: var(--gray-600); font-weight: 500; }
+
+  .step-slide { display: none; }
+  .step-slide.active { display: block; animation: slideIn 0.3s cubic-bezier(0.4,0,0.2,1); }
+  @keyframes slideIn  { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+  .step-slide.slide-back.active { animation: slideInBack 0.3s cubic-bezier(0.4,0,0.2,1); }
+  @keyframes slideInBack { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+
+  /* ── Summary ── */
+  .summary-grid { display: flex; flex-direction: column; gap: 14px; }
+  .summary-section { background: var(--gray-100); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--gray-200); }
+  .summary-section-header { background: var(--blue-dark); color: var(--white); padding: 9px 15px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+  .summary-field { padding: 9px 15px; border-bottom: 1px solid var(--gray-200); }
+  .summary-field:last-child { border-bottom: none; }
+  .summary-field-label { font-size: 11px; color: var(--gray-600); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+  .summary-field-value { font-size: 13px; color: var(--gray-800); line-height: 1.5; white-space: pre-wrap; }
+  .summary-field-value.empty { color: var(--gray-400); font-style: italic; }
+
+  /* ── Success ── */
+  .success-screen { text-align: center; padding: 44px 28px; display: none; }
+  .success-screen.visible { display: block; animation: cardIn 0.5s ease; }
+  .success-icon {
+    width: 76px; height: 76px; background: var(--green-light); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+    margin: 0 auto 22px;
+    animation: popIn 0.5s cubic-bezier(0.4,0,0.2,1) 0.2s both;
+  }
+  @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .success-screen h2 { font-size: 21px; color: var(--blue-dark); margin-bottom: 10px; }
+  .success-screen p  { font-size: 14px; color: var(--gray-600); max-width: 400px; margin: 0 auto 20px; line-height: 1.6; }
+  .success-ref { display: inline-block; background: var(--blue-xpale); border: 1px solid var(--blue-pale); border-radius: var(--radius-sm); padding: 9px 18px; font-size: 13px; color: var(--blue-dark); font-weight: 600; margin-bottom: 20px; }
+
+  .error-msg { font-size: 11px; color: var(--red); margin-top: 5px; display: none; font-weight: 500; }
+  .error-msg.visible { display: block; }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .setup-guide, .login-banner, .user-badge, .progress-wrap, .card-footer { display: none !important; }
+    .card { box-shadow: none; }
+    .card-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .step-slide { display: block !important; }
+    .success-screen { display: none !important; }
+    @page { margin: 15mm; }
+  }
+
+  .float-info { position: fixed; bottom: 18px; right: 18px; background: var(--blue-dark); color: var(--white); padding: 7px 14px; border-radius: 50px; font-size: 11px; opacity: 0.8; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <div class="header-badge">🏭 Desitin Arzneimittel GmbH</div>
+    <h1>Betriebliches Vorschlagswesen</h1>
+    <p>Besondere Ideen entstehen dort, wo die Arbeit geleistet wird. Reichen Sie Ihren Verbesserungsvorschlag hier ein.</p>
+  </div>
+
+  <!-- ══ SETUP GUIDE (nur sichtbar wenn IDs nicht konfiguriert) ══ -->
+  <div class="setup-guide" id="setupGuide" style="display:none">
+    <div class="setup-guide-header" onclick="this.parentElement.classList.toggle('open')">
+      <div class="setup-guide-header-left">
+        <span style="font-size:20px">⚙️</span>
+        <div>
+          <div class="setup-guide-title">Azure App Registration einrichten</div>
+          <div class="setup-guide-sub">Einmalige Konfiguration für Entra ID Anbindung – danach ausblendbar</div>
+        </div>
+      </div>
+      <span class="setup-guide-toggle">▼</span>
+    </div>
+    <div class="setup-guide-body">
+      <div class="setup-step">
+        <div class="setup-step-num">1</div>
+        <div class="setup-step-text">
+          <strong>Azure Portal öffnen → App Registrierungen</strong>
+          Gehe zu <code>portal.azure.com</code> → <strong>Microsoft Entra ID</strong> → <strong>App-Registrierungen</strong> → <strong>Neue Registrierung</strong>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-num">2</div>
+        <div class="setup-step-text">
+          <strong>App konfigurieren</strong>
+          Name: <code>Vorschlagswesen-HR</code> | Kontotyp: <em>Nur Konten in diesem Organisationsverzeichnis</em><br>
+          Umleitungs-URI: <strong>Plattform = Single-Page Application (SPA)</strong><br>
+          URI = Pfad zu dieser HTML-Datei (z.B. SharePoint-URL oder <code>http://localhost</code> für lokale Tests)
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-num">3</div>
+        <div class="setup-step-text">
+          <strong>API-Berechtigungen hinzufügen</strong>
+          <strong>API-Berechtigungen</strong> → <strong>Berechtigung hinzufügen</strong> → Microsoft Graph → Delegiert:<br>
+          <span class="permission-tag">User.Read</span>
+          <span class="permission-tag">User.ReadBasic.All</span><br>
+          → <strong>Administratorzustimmung erteilen</strong> (erfordert Globaler Administrator)
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-num">4</div>
+        <div class="setup-step-text">
+          <strong>IDs in diese Datei eintragen</strong>
+          Öffne diese HTML-Datei in einem Texteditor und ersetze im <code>&lt;script&gt;</code>-Block:<br>
+          <code>DEIN_TENANT_ID</code> → Übersicht der App → <strong>Verzeichnis-ID (Mandant)</strong><br>
+          <code>DEIN_CLIENT_ID</code> → Übersicht der App → <strong>Anwendungs-ID (Client)</strong><br>
+          Danach diese Anleitung via <code>setupGuide.style.display='none'</code> ausblenden.
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-num">5</div>
+        <div class="setup-step-text">
+          <strong>Kein Client-Secret nötig!</strong>
+          Da das Formular als SPA (Single-Page Application) registriert ist und ausschließlich delegierte Berechtigungen verwendet, braucht keine geheime Schlüssel hinterlegt zu werden. ✅
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LOGIN BANNER ══ -->
+  <div class="login-banner" id="loginBanner">
+    <div class="login-banner-left">
+      <div class="login-banner-icon">🔐</div>
+      <div class="login-banner-text">
+        <h3>Felder automatisch befüllen</h3>
+        <p>Mit Ihrem Microsoft 365-Konto anmelden – Name und Führungskraft werden automatisch eingetragen.</p>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="user-badge" id="userBadge">
+        <div class="user-avatar" id="userInitials">–</div>
+        <div>
+          <div class="user-badge-name" id="userBadgeName"></div>
+          <div class="user-badge-dept" id="userBadgeDept"></div>
+        </div>
+        <button class="user-signout" onclick="signOut()">Abmelden</button>
+      </div>
+      <button class="btn-ms-login" id="loginBtn" onclick="signIn()">
+        <!-- Microsoft Logo -->
+        <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+          <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+          <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+          <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+        </svg>
+        <span id="loginBtnText">Mit Microsoft anmelden</span>
+        <div class="spinner" id="loginSpinner"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ PROGRESS ══ -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-steps" id="progressSteps">
+      <div class="progress-line" id="progressLine"></div>
+      <div class="step-item active" id="pi-0" onclick="goToStep(0)">
+        <div class="step-circle"><span class="step-num">1</span></div>
+        <div class="step-label">Thema & Bereich</div>
+      </div>
+      <div class="step-item" id="pi-1" onclick="goToStep(1)">
+        <div class="step-circle"><span class="step-num">2</span></div>
+        <div class="step-label">Einreichende Person</div>
+      </div>
+      <div class="step-item" id="pi-2" onclick="goToStep(2)">
+        <div class="step-circle"><span class="step-num">3</span></div>
+        <div class="step-label">IST-Zustand</div>
+      </div>
+      <div class="step-item" id="pi-3" onclick="goToStep(3)">
+        <div class="step-circle"><span class="step-num">4</span></div>
+        <div class="step-label">SOLL-Zustand</div>
+      </div>
+      <div class="step-item" id="pi-4" onclick="goToStep(4)">
+        <div class="step-circle"><span class="step-num">5</span></div>
+        <div class="step-label">Erklärung</div>
+      </div>
+      <div class="step-item" id="pi-5" onclick="goToStep(5)">
+        <div class="step-circle"><span class="step-num">6</span></div>
+        <div class="step-label">Überprüfung</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FORM CARD ══ -->
+  <div class="card" id="mainCard">
+
+    <!-- ─ STEP 0: Thema ─ -->
+    <div class="step-slide active" id="step-0">
+      <div class="card-header">
+        <div class="card-header-icon">💡</div>
+        <div class="card-header-text">
+          <h2>Thema und Bereich des Verbesserungsvorschlags</h2>
+          <p>Beschreiben Sie kurz, worum es bei Ihrem Vorschlag geht.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="info-box">
+          <strong>Hinweis</strong>
+          Besprechen Sie Ihren Vorschlag zunächst mit Ihrer Führungskraft und wägen Sie die Einreichung gemeinsam ab. Der Vorschlag sollte über Ihre Führungskraft eingereicht werden.
+        </div>
+        <div class="form-group">
+          <label for="titel">Titel / Thema des Vorschlags <span class="required">*</span></label>
+          <input type="text" id="titel" placeholder="Kurze, prägnante Bezeichnung des Vorschlags" maxlength="120">
+          <div class="field-hint">Maximal 120 Zeichen – fassen Sie die Kernidee in einem Satz zusammen.</div>
+          <div class="error-msg" id="err-titel">Bitte geben Sie einen Titel ein.</div>
+        </div>
+        <div class="form-group">
+          <label>Bereich des Vorschlags <span class="required">*</span></label>
+          <div class="checkbox-group" id="bereich-group">
+            <label class="checkbox-item" id="cb-effizienz">
+              <input type="checkbox" value="Effizienzverbesserung" onchange="toggleCheck(this,'cb-effizienz')">
+              <div class="checkbox-label">
+                <strong>⚡ Effizienzverbesserung</strong>
+                <span>Prozesse beschleunigen, Abläufe optimieren, Zeitersparnis</span>
+              </div>
+            </label>
+            <label class="checkbox-item" id="cb-umsatz">
+              <input type="checkbox" value="Umsatzsteigerung" onchange="toggleCheck(this,'cb-umsatz')">
+              <div class="checkbox-label">
+                <strong>📈 Umsatzsteigerung</strong>
+                <span>Neue Erlösquellen, Vertriebsoptimierung, Marktpotenziale</span>
+              </div>
+            </label>
+            <label class="checkbox-item" id="cb-kosten">
+              <input type="checkbox" value="Kostenersparnis" onchange="toggleCheck(this,'cb-kosten')">
+              <div class="checkbox-label">
+                <strong>💰 Kostenersparnis</strong>
+                <span>Kosten reduzieren, Ressourcen einsparen, Verschwendung vermeiden</span>
+              </div>
+            </label>
+            <label class="checkbox-item" id="cb-sonstige">
+              <input type="checkbox" value="Sonstige" onchange="toggleCheck(this,'cb-sonstige'); toggleSonstige(this)">
+              <div class="checkbox-label">
+                <strong>🔧 Sonstige</strong>
+                <span>Qualität, Sicherheit, Mitarbeiterzufriedenheit, Umwelt …</span>
+              </div>
+            </label>
+          </div>
+          <div class="error-msg" id="err-bereich">Bitte wählen Sie mindestens einen Bereich.</div>
+        </div>
+        <div class="form-group" id="sonstige-group" style="display:none">
+          <label for="sonstige-text">Sonstiger Bereich <span class="required">*</span></label>
+          <input type="text" id="sonstige-text" placeholder="z.B. Arbeitssicherheit, Umweltschutz …">
+          <div class="error-msg" id="err-sonstige">Bitte beschreiben Sie den sonstigen Bereich.</div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="step-counter">Schritt 1 von 6</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-print" onclick="window.print()">🖨 Drucken</button>
+          <button class="btn btn-primary" onclick="nextStep()">Weiter →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ STEP 1: Einreichende Person ─ -->
+    <div class="step-slide" id="step-1">
+      <div class="card-header">
+        <div class="card-header-icon">👤</div>
+        <div class="card-header-text">
+          <h2>Angaben zur einreichenden Person / zum Team</h2>
+          <p>Wer reicht diesen Vorschlag ein?</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Autofill Status Bar -->
+        <div class="autofill-bar" id="autofillBar">
+          ✅ Felder wurden aus Entra ID befüllt – bitte bei Bedarf anpassen.
+        </div>
+
+        <div class="form-group">
+          <label for="fuehrungskraft">Name der Führungskraft <span class="required">*</span></label>
+          <input type="text" id="fuehrungskraft" placeholder="Vorname, Nachname der direkt vorgesetzten Führungskraft">
+          <div class="field-hint" id="fk-hint">Wird automatisch aus Entra ID geladen, sobald Sie sich anmelden.</div>
+          <div class="error-msg" id="err-fuehrungskraft">Bitte geben Sie den Namen der Führungskraft an.</div>
+        </div>
+
+        <div class="section-divider">Einreichende Person(en)</div>
+
+        <div class="form-group">
+          <label for="einreicher1">Einreicher/in (1) <span class="required">*</span></label>
+          <input type="text" id="einreicher1" placeholder="Vorname, Nachname – Abteilung / Kostenstelle">
+          <div class="field-hint" id="e1-hint">Wird automatisch aus Entra ID geladen, sobald Sie sich anmelden.</div>
+          <div class="error-msg" id="err-einreicher1">Bitte geben Sie mindestens eine einreichende Person an.</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="einreicher2">Einreicher/in (2) <span class="optional">(optional)</span></label>
+            <input type="text" id="einreicher2" placeholder="Vorname, Nachname – Abteilung">
+          </div>
+          <div class="form-group">
+            <label for="einreicher3">Einreicher/in (3) <span class="optional">(optional)</span></label>
+            <input type="text" id="einreicher3" placeholder="Vorname, Nachname – Abteilung">
+          </div>
+        </div>
+
+        <div class="section-divider">Beteiligung bei Team-Einreichung</div>
+        <div class="percent-row">
+          <input type="text" id="bet1-name" placeholder="Einreicher/in 1" disabled style="opacity:0.6">
+          <input type="text" id="beteiligung1" placeholder="%" style="text-align:center" oninput="updateTotal()">
+        </div>
+        <div class="percent-row">
+          <input type="text" id="bet2-name" placeholder="Einreicher/in 2" disabled style="opacity:0.6">
+          <input type="text" id="beteiligung2" placeholder="%" style="text-align:center" oninput="updateTotal()">
+        </div>
+        <div class="percent-row">
+          <input type="text" id="bet3-name" placeholder="Einreicher/in 3" disabled style="opacity:0.6">
+          <input type="text" id="beteiligung3" placeholder="%" style="text-align:center" oninput="updateTotal()">
+        </div>
+        <div class="percent-total" id="percentTotal">
+          <span>Gesamtbeteiligung</span><span id="percentSum">– %</span>
+        </div>
+        <div class="field-hint" style="margin-top:8px">Summe muss 100 % ergeben. Bei Einzeleinreichung freilassen.</div>
+
+        <div class="section-divider">Datenschutz</div>
+
+        <div class="form-group">
+          <label>Anonymisierung gewünscht? <span class="required">*</span></label>
+          <div class="checkbox-group">
+            <label class="checkbox-item checked" id="anon-nein">
+              <input type="radio" name="anonym" value="nein" checked onchange="toggleAnonym(this)">
+              <div class="checkbox-label">
+                <strong>🔓 Nein – mein Name darf im Rahmen des Verfahrens genannt werden</strong>
+                <span>Ihr Name wird im Prüfverfahren bekannt sein.</span>
+              </div>
+            </label>
+            <label class="checkbox-item" id="anon-ja">
+              <input type="radio" name="anonym" value="ja" onchange="toggleAnonym(this)">
+              <div class="checkbox-label">
+                <strong>🔒 Ja – ich möchte anonym bleiben</strong>
+                <span>Ihr Name wird nicht an Dritte weitergegeben.</span>
+              </div>
+            </label>
+          </div>
+          <div class="anonym-warning" id="anonymWarning">
+            ⚠️ <strong>Anonyme Einreichung:</strong> Keine Rückfragen möglich. Prämierung nur bei Offenlegung der Identität möglich.
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-secondary" onclick="prevStep()">← Zurück</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="step-counter">Schritt 2 von 6</span>
+          <button class="btn btn-primary" onclick="nextStep()">Weiter →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ STEP 2: IST ─ -->
+    <div class="step-slide" id="step-2">
+      <div class="card-header">
+        <div class="card-header-icon">🔍</div>
+        <div class="card-header-text">
+          <h2>Beschreibung des IST-Zustands</h2>
+          <p>Wie ist die aktuelle Situation?</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="info-box">
+          <strong>Was hier hingehört</strong>
+          Beschreiben Sie den bestehenden Prozess so konkret wie möglich. Je präziser, desto besser kann das Gremium Ihren Vorschlag einordnen.
+        </div>
+        <div class="form-group">
+          <label for="ist">Beschreibung IST-Zustand und Darstellung der Nachteile <span class="required">*</span></label>
+          <textarea id="ist" class="large" placeholder="Was passiert heute? Welche Probleme, Engpässe oder Ineffizienzen entstehen? Welche Auswirkungen hat das?"></textarea>
+          <div class="field-hint">Mindestens 50 Zeichen. Tipp: Konkrete Zahlen helfen (z.B. „dauert ca. 3 Stunden/Woche").</div>
+          <div class="error-msg" id="err-ist">Bitte beschreiben Sie den aktuellen Zustand (mind. 50 Zeichen).</div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-secondary" onclick="prevStep()">← Zurück</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="step-counter">Schritt 3 von 6</span>
+          <button class="btn btn-primary" onclick="nextStep()">Weiter →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ STEP 3: SOLL ─ -->
+    <div class="step-slide" id="step-3">
+      <div class="card-header">
+        <div class="card-header-icon">🎯</div>
+        <div class="card-header-text">
+          <h2>Beschreibung des vorgeschlagenen SOLL-Zustands</h2>
+          <p>Wie soll es nach Ihrer Idee aussehen?</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label for="soll">Beschreibung SOLL-Zustand und Vorteile <span class="required">*</span></label>
+          <textarea id="soll" class="large" placeholder="Was soll sich ändern? Wie soll der neue Prozess aussehen? Welche Vorteile entstehen?"></textarea>
+          <div class="error-msg" id="err-soll">Bitte beschreiben Sie den vorgeschlagenen Zustand (mind. 50 Zeichen).</div>
+        </div>
+        <div class="form-group">
+          <label for="skizze">Ergänzende Erläuterung <span class="optional">(optional)</span></label>
+          <textarea id="skizze" placeholder="Weitere Details, Ablaufschritte oder Bezug zu bestehenden Projekten …"></textarea>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-secondary" onclick="prevStep()">← Zurück</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="step-counter">Schritt 4 von 6</span>
+          <button class="btn btn-primary" onclick="nextStep()">Weiter →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ STEP 4: Erklärung ─ -->
+    <div class="step-slide" id="step-4">
+      <div class="card-header">
+        <div class="card-header-icon">✍️</div>
+        <div class="card-header-text">
+          <h2>Erklärungen und Bestätigung</h2>
+          <p>Bitte lesen und bestätigen Sie alle Punkte.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>Ich erkläre und bestätige ausdrücklich: <span class="required">*</span></label>
+          <div class="checkbox-group">
+            <label class="checkbox-item" id="erkl-1">
+              <input type="checkbox" id="erklaerung1" onchange="toggleCheck(this,'erkl-1','checked-green')">
+              <div class="checkbox-label">
+                <strong>🧠 Eigenherkunft der Idee</strong>
+                <span>Die Idee wurde eigenständig entwickelt und nicht von Dritten übernommen.</span>
+              </div>
+            </label>
+            <label class="checkbox-item" id="erkl-2">
+              <input type="checkbox" id="erklaerung2" onchange="toggleCheck(this,'erkl-2','checked-green')">
+              <div class="checkbox-label">
+                <strong>🔏 Keine entgegenstehenden Schutzrechte</strong>
+                <span>Es liegt kein Patent oder Schutzrecht Dritter vor, soweit bekannt.</span>
+              </div>
+            </label>
+            <label class="checkbox-item" id="erkl-3">
+              <input type="checkbox" id="erklaerung3" onchange="toggleCheck(this,'erkl-3','checked-green')">
+              <div class="checkbox-label">
+                <strong>🛡 Datenschutz-Einwilligung (DSGVO)</strong>
+                <span>Ich habe die Datenschutzhinweise zur Kenntnis genommen und willige ein.</span>
+              </div>
+            </label>
+            <label class="checkbox-item" id="erkl-4">
+              <input type="checkbox" id="erklaerung4" onchange="toggleCheck(this,'erkl-4','checked-green')">
+              <div class="checkbox-label">
+                <strong>✅ Vollständigkeit und Richtigkeit</strong>
+                <span>Alle Angaben sind nach bestem Wissen korrekt und vollständig.</span>
+              </div>
+            </label>
+          </div>
+          <div class="error-msg" id="err-erklaerung">Bitte bestätigen Sie alle vier Punkte.</div>
+        </div>
+        <div class="info-box" style="margin-top:22px;margin-bottom:0">
+          <strong>Hinweis zur Bearbeitungszeit</strong>
+          Ihr Vorschlag wird nach Eingang an das zuständige Gremium weitergeleitet. Bearbeitungszeit: ca. 4 Wochen.
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-secondary" onclick="prevStep()">← Zurück</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="step-counter">Schritt 5 von 6</span>
+          <button class="btn btn-primary" onclick="nextStep()">Zur Überprüfung →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ STEP 5: Summary ─ -->
+    <div class="step-slide" id="step-5">
+      <div class="card-header">
+        <div class="card-header-icon">📋</div>
+        <div class="card-header-text">
+          <h2>Überprüfung und Einreichung</h2>
+          <p>Bitte prüfen Sie alle Angaben vor der Einreichung.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="summary-content" class="summary-grid"></div>
+        <div style="margin-top:20px">
+          <div class="info-box" style="margin-bottom:0">
+            <strong>Bereit zur Einreichung?</strong>
+            Mit „Jetzt einreichen" wird Ihr Vorschlag verbindlich abgesendet. Ihre Führungskraft erhält eine Benachrichtigung.
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-secondary" onclick="prevStep()">← Zurück bearbeiten</button>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="step-counter">Schritt 6 von 6</span>
+          <button class="btn btn-print" onclick="window.print()">🖨 Drucken</button>
+          <button class="btn btn-success" onclick="submitForm()">✓ Jetzt einreichen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ SUCCESS ─ -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">🎉</div>
+      <h2>Herzlichen Dank für Ihren Vorschlag!</h2>
+      <p>Ihr Verbesserungsvorschlag wurde erfolgreich eingereicht. Das Gremium prüft Ihren Vorschlag und meldet sich innerhalb von 4 Wochen.</p>
+      <div class="success-ref" id="refNumber"></div>
+      <p style="font-size:12px;color:var(--gray-400)">Desitin schätzt den Beitrag jeder Mitarbeiterin und jedes Mitarbeiters.</p>
+      <div style="margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-print" onclick="window.print()">🖨 Kopie drucken</button>
+        <button class="btn btn-primary" onclick="resetForm()">Weiteren Vorschlag einreichen</button>
+      </div>
+    </div>
+
+  </div><!-- /.card -->
+</div><!-- /.page-wrap -->
+
+<div class="float-info">Desitin Arzneimittel GmbH · Betriebliches Vorschlagswesen · Build 2026-04-01c</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// MSAL – Microsoft Authentication Library (Redirect Flow)
+// Funktioniert auf Azure Static Web Apps, GitHub Pages, etc.
+// Kein Popup, kein SharePoint-Preview-Problem!
+// ════════════════════════════════════════════════════════════════
+
+const MSAL_CONFIG = {
+  auth: {
+    clientId: '65df8d8e-e02f-4464-a26f-4d910321dc2a',
+    authority: 'https://login.microsoftonline.com/7dfceb24-cee7-4742-92cc-4ce77fbefb8b',
+    redirectUri: window.location.href.split('?')[0].split('#')[0]
+  },
+  cache: {
+    cacheLocation: 'sessionStorage',
+    storeAuthStateInCookie: true
+  }
+};
+
+const TOKEN_SCOPES = ['User.Read'];
+let msalInstance = null;
+
+async function initMSAL() {
+  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+  await msalInstance.initialize();
+
+  // Redirect-Callback abfangen (kommt zurück von Microsoft Login)
+  try {
+    const response = await msalInstance.handleRedirectPromise();
+    if (response && response.accessToken) {
+      await loadUserFromToken(response.accessToken);
+      return;
+    }
+  } catch(e) {
+    console.warn('MSAL Redirect Error:', e);
+    showAuthError('Anmeldung fehlgeschlagen: ' + e.message);
+    return;
+  }
+
+  // Bereits angemeldet? Token still erneuern
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const tokenResp = await msalInstance.acquireTokenSilent({
+        scopes: TOKEN_SCOPES,
+        account: accounts[0]
+      });
+      await loadUserFromToken(tokenResp.accessToken);
+    } catch(e) {
+      // Session abgelaufen – Login-Button bleibt sichtbar
+      console.warn('Silent token failed:', e);
+    }
+  }
+}
+
+async function loadUserFromToken(accessToken) {
+  const spinner = document.getElementById('loginSpinner');
+  spinner.classList.add('visible');
+  try {
+    const headers = { 'Authorization': 'Bearer ' + accessToken };
+
+    const [meResp, managerResp] = await Promise.allSettled([
+      fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,mail,department,jobTitle', { headers }).then(r => r.json()),
+      fetch('https://graph.microsoft.com/v1.0/me/manager?$select=displayName', { headers }).then(r => r.json())
+    ]);
+
+    const me      = meResp.status      === 'fulfilled' ? meResp.value      : null;
+    const manager = managerResp.status === 'fulfilled' ? managerResp.value : null;
+
+    if (me && me.displayName) {
+      const dept        = me.department || '';
+      const jobTitle    = me.jobTitle   || '';
+      const managerName = manager && manager.displayName ? manager.displayName : '';
+
+      // Einreicher/in (1) befüllen
+      const e1 = document.getElementById('einreicher1');
+      e1.value = me.displayName + (dept ? ' – ' + dept : '');
+      e1.classList.add('autofilled');
+      document.getElementById('bet1-name').value = me.displayName;
+      document.getElementById('e1-hint').textContent =
+        'Automatisch aus Microsoft 365 geladen' + (me.mail ? ' (' + me.mail + ')' : '') + ' – bei Bedarf anpassen.';
+
+      // Führungskraft befüllen
+      const fk = document.getElementById('fuehrungskraft');
+      if (managerName) {
+        fk.value = managerName;
+        fk.classList.add('autofilled');
+        document.getElementById('fk-hint').textContent = 'Automatisch aus Microsoft 365 geladen – bei Bedarf anpassen.';
+      } else {
+        document.getElementById('fk-hint').textContent = 'Kein Vorgesetzter in Azure AD hinterlegt – bitte manuell eintragen.';
+      }
+
+      // User Badge anzeigen
+      const nameParts = (me.displayName || '').split(' ');
+      const initials  = (nameParts[0]?.[0] || '') + (nameParts[nameParts.length-1]?.[0] || '');
+      document.getElementById('userInitials').textContent  = initials.toUpperCase();
+      document.getElementById('userBadgeName').textContent = me.displayName || '';
+      document.getElementById('userBadgeDept').textContent = jobTitle || dept || '';
+      document.getElementById('userBadge').classList.add('visible');
+      document.getElementById('loginBtn').style.display = 'none';
+      document.getElementById('autofillBar').classList.add('visible');
+    }
+  } catch(e) {
+    console.warn('Graph API Fehler:', e);
+    showAuthError('Profil konnte nicht geladen werden: ' + e.message);
+  } finally {
+    spinner.classList.remove('visible');
+  }
+}
+
+function showAuthError(msg) {
+  const bar = document.getElementById('autofillBar');
+  bar.classList.add('visible');
+  bar.style.background = '#fff3cd';
+  bar.style.borderColor = '#ffc107';
+  bar.style.color = '#664d03';
+  bar.innerHTML = '<span style="font-size:18px">⚠</span>'
+    + '<span><strong>' + msg + '</strong><br>'
+    + '<small>Bitte erneut versuchen oder Felder manuell ausfüllen.</small></span>';
+}
+
+function signIn() {
+  if (msalInstance) {
+    msalInstance.loginRedirect({ scopes: TOKEN_SCOPES });
+  }
+}
+
+function signOut() {
+  document.getElementById('userBadge').classList.remove('visible');
+  document.getElementById('loginBtn').style.display = 'flex';
+  ['fuehrungskraft', 'einreicher1'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('autofilled');
+    el.value = '';
+  });
+  document.getElementById('autofillBar').classList.remove('visible');
+  if (msalInstance) {
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) msalInstance.logoutRedirect({ account: accounts[0] });
+  }
+}
+
+// ── MSAL starten wenn HTTPS ─────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.location.protocol === 'https:') {
+    initMSAL().catch(e => console.warn('MSAL init failed:', e));
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════
+let currentStep = 0;
+const TOTAL_STEPS = 6;
+let direction = 'forward';
+
+function nextStep() {
+  if (!validateStep(currentStep)) return;
+  if (currentStep === TOTAL_STEPS - 2) buildSummary();
+  direction = 'forward';
+  setStep(currentStep + 1);
+}
+function prevStep() { direction = 'back'; setStep(currentStep - 1); }
+function goToStep(n) {
+  if (n > currentStep) return;
+  direction = n < currentStep ? 'back' : 'forward';
+  setStep(n);
+}
+function setStep(n) {
+  document.getElementById('step-' + currentStep).classList.remove('active');
+  currentStep = n;
+  const el = document.getElementById('step-' + currentStep);
+  el.classList.remove('slide-back');
+  if (direction === 'back') el.classList.add('slide-back');
+  el.classList.add('active');
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function updateProgress() {
+  document.getElementById('progressLine').style.width = (currentStep / (TOTAL_STEPS - 1) * 100) + '%';
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const item = document.getElementById('pi-' + i);
+    item.classList.remove('active','done');
+    if (i < currentStep) item.classList.add('done');
+    else if (i === currentStep) item.classList.add('active');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// VALIDATION
+// ════════════════════════════════════════════════════════════════
+function showErr(id, show) { document.getElementById(id)?.classList.toggle('visible', show); }
+
+function validateStep(step) {
+  let ok = true;
+  if (step === 0) {
+    const titel = document.getElementById('titel').value.trim();
+    const chk   = document.querySelectorAll('#bereich-group input:checked');
+    const sonstig = document.getElementById('cb-sonstige').querySelector('input').checked;
+    const sonstigT = document.getElementById('sonstige-text').value.trim();
+    const tErr = titel.length < 3, bErr = chk.length === 0;
+    document.getElementById('titel').classList.toggle('error', tErr);
+    showErr('err-titel', tErr); showErr('err-bereich', bErr);
+    if (tErr || bErr) ok = false;
+    if (sonstig) { const sErr = sonstigT.length < 2; document.getElementById('sonstige-text').classList.toggle('error', sErr); showErr('err-sonstige', sErr); if (sErr) ok = false; }
+  }
+  if (step === 1) {
+    const fk = document.getElementById('fuehrungskraft').value.trim();
+    const e1 = document.getElementById('einreicher1').value.trim();
+    const fkE = fk.length < 2, e1E = e1.length < 2;
+    document.getElementById('fuehrungskraft').classList.toggle('error', fkE);
+    document.getElementById('einreicher1').classList.toggle('error', e1E);
+    showErr('err-fuehrungskraft', fkE); showErr('err-einreicher1', e1E);
+    if (fkE || e1E) ok = false;
+  }
+  if (step === 2) { const v = document.getElementById('ist').value.trim(); const e = v.length < 50; document.getElementById('ist').classList.toggle('error', e); showErr('err-ist', e); if (e) ok = false; }
+  if (step === 3) { const v = document.getElementById('soll').value.trim(); const e = v.length < 50; document.getElementById('soll').classList.toggle('error', e); showErr('err-soll', e); if (e) ok = false; }
+  if (step === 4) {
+    const all4 = ['erklaerung1','erklaerung2','erklaerung3','erklaerung4'].every(id => document.getElementById(id).checked);
+    showErr('err-erklaerung', !all4); if (!all4) ok = false;
+  }
+  return ok;
+}
+
+// ════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════════════════
+function toggleCheck(input, wrapperId, cls = 'checked') {
+  if (input.type === 'radio') {
+    document.querySelectorAll('input[name="' + input.name + '"]').forEach(r => {
+      const p = r.closest('.checkbox-item'); if (p) { p.classList.remove('checked','checked-green'); }
+    });
+  }
+  document.getElementById(wrapperId).classList.toggle(cls, input.checked || input.type === 'radio');
+}
+function toggleSonstige(input) { document.getElementById('sonstige-group').style.display = input.checked ? 'block' : 'none'; }
+function toggleAnonym(radio) {
+  document.getElementById('anonymWarning').classList.toggle('visible', radio.value === 'ja');
+  ['nein','ja'].forEach(v => document.getElementById('anon-'+v).classList.remove('checked'));
+  document.getElementById('anon-' + radio.value).classList.add('checked');
+}
+function updateTotal() {
+  const v1 = parseFloat(document.getElementById('beteiligung1').value)||0;
+  const v2 = parseFloat(document.getElementById('beteiligung2').value)||0;
+  const v3 = parseFloat(document.getElementById('beteiligung3').value)||0;
+  const sum = v1+v2+v3, totalEl = document.getElementById('percentTotal');
+  document.getElementById('percentSum').textContent = (sum === 0 ? '–' : sum) + ' %';
+  totalEl.className = 'percent-total' + (sum === 0 ? '' : sum === 100 ? ' valid' : ' invalid');
+}
+
+// Sync Beteiligung-Namen
+document.addEventListener('DOMContentLoaded', () => {
+  [[1,'bet1-name'],[2,'bet2-name'],[3,'bet3-name']].forEach(([n, betId]) => {
+    document.getElementById('einreicher'+n)?.addEventListener('input', e => {
+      document.getElementById(betId).value = e.target.value;
+    });
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// SUMMARY
+// ════════════════════════════════════════════════════════════════
+function sf(label, value) {
+  const v = value && (typeof value === 'string' ? value.trim() : value) ? String(value).trim() : '';
+  return `<div class="summary-field"><div class="summary-field-label">${label}</div><div class="summary-field-value ${v?'':'empty'}">${v||'(nicht angegeben)'}</div></div>`;
+}
+function buildSummary() {
+  const bereiche = [...document.querySelectorAll('#bereich-group input:checked')].map(i => i.value);
+  const sT = document.getElementById('sonstige-text').value;
+  if (bereiche.includes('Sonstige') && sT) bereiche[bereiche.indexOf('Sonstige')] = 'Sonstige: ' + sT;
+  const e2 = document.getElementById('einreicher2').value;
+  const e3 = document.getElementById('einreicher3').value;
+  const b1 = document.getElementById('beteiligung1').value;
+  const b2 = document.getElementById('beteiligung2').value;
+  const b3 = document.getElementById('beteiligung3').value;
+  let betBuf = '';
+  if (b1||b2||b3) {
+    betBuf = document.getElementById('einreicher1').value + ': ' + (b1||'–') + '%';
+    if (e2) betBuf += '\n' + e2 + ': ' + (b2||'–') + '%';
+    if (e3) betBuf += '\n' + e3 + ': ' + (b3||'–') + '%';
+  }
+  const anonym = document.querySelector('input[name="anonym"]:checked').value;
+  document.getElementById('summary-content').innerHTML = `
+    <div class="summary-section">
+      <div class="summary-section-header">💡 Thema & Bereich</div>
+      ${sf('Titel / Thema', document.getElementById('titel').value)}
+      ${sf('Bereich(e)', bereiche.join(', '))}
+    </div>
+    <div class="summary-section">
+      <div class="summary-section-header">👤 Einreichende Person / Team</div>
+      ${sf('Führungskraft', document.getElementById('fuehrungskraft').value)}
+      ${sf('Einreicher/in (1)', document.getElementById('einreicher1').value)}
+      ${e2 ? sf('Einreicher/in (2)', e2) : ''}
+      ${e3 ? sf('Einreicher/in (3)', e3) : ''}
+      ${betBuf ? sf('Beteiligung', betBuf) : ''}
+      ${sf('Anonymisierung', anonym === 'ja' ? '🔒 Ja – anonym' : '🔓 Nein – Name darf genannt werden')}
+    </div>
+    <div class="summary-section">
+      <div class="summary-section-header">🔍 IST-Zustand</div>
+      ${sf('Aktuelle Situation & Nachteile', document.getElementById('ist').value)}
+    </div>
+    <div class="summary-section">
+      <div class="summary-section-header">🎯 SOLL-Zustand</div>
+      ${sf('Verbesserungsidee & Vorteile', document.getElementById('soll').value)}
+      ${sf('Ergänzende Erläuterung', document.getElementById('skizze').value)}
+    </div>
+    <div class="summary-section">
+      <div class="summary-section-header">✅ Erklärungen</div>
+      ${sf('Eigenherkunft', document.getElementById('erklaerung1').checked ? '✓ Bestätigt' : '')}
+      ${sf('Keine Schutzrechte', document.getElementById('erklaerung2').checked ? '✓ Bestätigt' : '')}
+      ${sf('Datenschutz', document.getElementById('erklaerung3').checked ? '✓ Bestätigt' : '')}
+      ${sf('Vollständigkeit', document.getElementById('erklaerung4').checked ? '✓ Bestätigt' : '')}
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// SUBMIT
+// ════════════════════════════════════════════════════════════════
+function submitForm() {
+  const ref  = 'VS-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000);
+  const date = new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  document.getElementById('progressWrap').style.display = 'none';
+  document.querySelectorAll('.step-slide').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.card-footer').forEach(f => f.style.display = 'none');
+  document.getElementById('successScreen').classList.add('visible');
+  document.getElementById('refNumber').textContent = '📄 Vorgangs-Nr.: ' + ref + ' · Eingereicht am ' + date;
+}
+function resetForm() { location.reload(); }
+
+// Init
+updateProgress();
+</script>
+</body>
+</html>
